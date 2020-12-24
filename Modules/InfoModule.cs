@@ -16,7 +16,11 @@ namespace Power66Radio
         {
             SocketGuildChannel channel = Context.Guild.GetChannel(Context.Channel.Id);
             var everyone = channel.Users;
-            var theRole = Context.Guild.Roles.Where(x => x.Position == Context.Guild.Roles.Count-2).FirstOrDefault();
+            var theRole = Context.Guild.Roles.Where(x => x.Name == "Big Daddies").FirstOrDefault();
+            if(theRole == null)
+            {
+                ReplyAsync("Wrong Server");
+            }
             return ReplyAsync(theRole.Mention +"\n"
                 +(channel.GetUser(Context.User.Id).Nickname == null ? Context.User.Username : channel.GetUser(Context.User.Id).Nickname) 
                 + " in the buildin!");
