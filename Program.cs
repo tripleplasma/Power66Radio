@@ -2,9 +2,12 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using Power66Radio.Modules;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,23 +25,19 @@ namespace Power66Radio
         
         public async Task MainAsync()
         {
-            _client = new DiscordSocketClient();
+            _services = ConfigureServices();
+            _client = _services.GetRequiredService<DiscordSocketClient>();
             _commands = new CommandService();
-            _services = new ServiceCollection()
-                .AddSingleton(_client)
-                .AddSingleton(_commands)
-                .BuildServiceProvider();
-
             _client.Log += Log;
 
-            var token = "NzkxNzY1Mjc4NDE3MjIzNjkw.X-T64A.OrA9ykVuHFTc_bRiFT_5WTCCgPc";
+            var token = File.ReadAllText("C:\\Key\\token.txt");
 
             _client.Log += _client_Log;
 
-            await RegisterCommandsAsync();
-
             await _client.LoginAsync(TokenType.Bot, token);
             await _client.StartAsync();
+
+            await _services.GetRequiredService<CommandHandler>().InitializeAsync();
 
             await Task.Delay(-1);
         }
@@ -49,24 +48,14 @@ namespace Power66Radio
             return Task.CompletedTask;
         }
 
-        public async Task RegisterCommandsAsync()
+        private ServiceProvider ConfigureServices()
         {
-            _client.MessageReceived += HandelCommandAsync;
-            await _commands.AddModulesAsync(Assembly.GetEntryAssembly(),_services);
-        }
-
-        private async Task HandelCommandAsync(SocketMessage msg)
-        {
-            var message = msg as SocketUserMessage;
-            SocketCommandContext context = new SocketCommandContext(_client, message);
-            if (message.Author.IsBot) return;
-
-            int argPos = 0;
-            if(message.HasStringPrefix("~",ref argPos))
-            {
-                var result = await _commands.ExecuteAsync(context, argPos, _services);
-                if (!result.IsSuccess) Console.WriteLine(result.Error);
-            }
+            return new ServiceCollection()
+                .AddSingleton<DiscordSocketClient>()
+                .AddSingleton<CommandService>()
+                .AddSingleton<CommandHandler>()
+                .AddSingleton<HttpClient>()
+                .BuildServiceProvider();
         }
 
         private Task Log(LogMessage msg)
