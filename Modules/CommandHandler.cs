@@ -34,7 +34,6 @@ namespace Power66Radio.Modules
 
         public async Task MessageReceivedAsync(SocketMessage rawMessage)
         {
-            //asd
             // Ignore system messages, or messages from other bots
             if (!(rawMessage is SocketUserMessage message)) return;
             if (message.Source != MessageSource.User) return;
