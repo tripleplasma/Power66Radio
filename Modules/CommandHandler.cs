@@ -58,7 +58,7 @@ namespace Power66Radio.Modules
                 return;
 
             // the command failed, let's notify the user that something happened.
-            await context.Channel.SendMessageAsync($"error: {result.ToString()}");
+            await context.Channel.SendMessageAsync($"Trips too lazy to do error handeling : {result.Error}");
         }
 
 

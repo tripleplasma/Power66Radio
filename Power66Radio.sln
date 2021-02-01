@@ -5,6 +5,11 @@ VisualStudioVersion = 16.0.30621.155
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Power66Radio", "Power66Radio.csproj", "{B028FE47-3959-4A86-8DBA-38B6BA515F1A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{652C3E81-A4A8-47F5-B2EA-608BD5253915}"
+	ProjectSection(SolutionItems) = preProject
+		phrases.json = phrases.json
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
