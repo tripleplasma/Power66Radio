@@ -58,6 +58,11 @@ namespace Power66Radio.Modules
                 return;
 
             // the command failed, let's notify the user that something happened.
+            if(result.Error.Value == CommandError.BadArgCount)
+            {
+                await context.Channel.SendMessageAsync($"**Oops!** You typed that command wrong");
+                return;
+            }
             await context.Channel.SendMessageAsync($"Trips too lazy to do error handeling : {result.Error}");
         }
 

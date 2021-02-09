@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Power66Radio
@@ -18,22 +19,19 @@ namespace Power66Radio
         [Command("tune")]
         public Task TuneIn(string ping = null)
         {
-            BigDaddies bd = BigDaddies.GetInstance(Context.Guild.Users.ToList());
-            if(ping == "ping")
-            {
-                var b = DefaultNotify(true);
-                if(b == null)
-                {
-                    return Task.CompletedTask;
-                }
-                return ReplyAsync(b);
-            }
-            var a = DefaultNotify(false);
-            if(a == null)
-            {
-                return Task.CompletedTask;
-            }
-            return ReplyAsync(a);
+            Random rand = new Random();
+            SocketGuild guild = Context.Guild;
+            SocketRole theRole = Context.Guild.Roles.Where(x => x.Name == "Big Daddies").FirstOrDefault();
+            var emotes = Context.Guild.Emotes;
+
+            BigDaddy dad = BigDaddies.GetBigDaddyByUser(guild.GetUser(Context.User.Id));
+            string message = "**" + dad.Nickname + "**: ";
+
+            if (dad == null) return ReplyAsync($"**{Context.User.Username}** is not a Big Daddy");
+            if (dad.Phrases.Count == 0) return ReplyAsync($"**{Context.User.Username}** does not have any phrases");
+
+            message += dad.Phrases[rand.Next(0, dad.Phrases.Count)];
+            return ReplyAsync(ping == "ping" ? theRole.Mention + "\n" + message : message);
         }
 
         [Command("tuneout")]
@@ -50,13 +48,11 @@ namespace Power66Radio
         {
             SocketGuildChannel channel = Context.Guild.GetChannel(Context.Channel.Id);
             SocketGuildUser amen = channel.GetUser(369983942088196106);
-            if (Context.User != amen)
-            {
-                amen.ModifyAsync(UnMute);
-            } else
+            if (Context.User == amen)
             {
                 return ReplyAsync("Silly goose, you can't unmute yourself >:)");
             }
+            amen.ModifyAsync(UnMute);
             return ReplyAsync("**" + amen.Username + "** has been Tuned In.");
         }
         private void Mute(GuildUserProperties gp)
@@ -72,50 +68,64 @@ namespace Power66Radio
         [Command("add")]
         public Task AddPhrase([Remainder]string phrase)
         {
-            List<UserPhrases> phrases = new List<UserPhrases>();
+            BigDaddy bd = BigDaddies.GetBigDaddyByUser(Context.Guild.GetUser(Context.User.Id));
+            if (bd == null) return ReplyAsync($"**{Context.User.Username}** is not a Big Daddy");
+            List<UserPhrases> serializePhrases = new List<UserPhrases>();
             using (StreamReader r = new StreamReader("C:\\Users\\kungl\\source\\repos\\Power66Radio\\phrases.json"))
             {
                 string json = r.ReadToEnd();
-                var allPhrases = JsonConvert.DeserializeObject<List<UserPhrases>>(json);
-                var userPhrases = allPhrases.Where(x => x.Id == Context.User.Id).FirstOrDefault();
-                if(userPhrases == null)
+                var allUserPhrases = JsonConvert.DeserializeObject<List<UserPhrases>>(json);
+                var currentUserPhrases = allUserPhrases.Where(x => x.Id == bd.Id).FirstOrDefault();
+                if(currentUserPhrases == null)
                 {
                     UserPhrases newUser = new UserPhrases
                     {
-                        Id = Context.User.Id,
+                        Id = bd.Id,
                         Phrases = new List<string>() {phrase}
                     };
-                    allPhrases.Add(newUser);
+                    allUserPhrases.Add(newUser);
                 } else
                 {
-                    userPhrases.Phrases.Add(phrase);
+                    currentUserPhrases.Phrases.Add(phrase);
+                    bd.Phrases.Add(phrase);
                 }
-                phrases = allPhrases;
+                serializePhrases = allUserPhrases;
             }
             using (StreamWriter file = File.CreateText("C:\\Users\\kungl\\source\\repos\\Power66Radio\\phrases.json"))
             {
                 JsonSerializer serializer = new JsonSerializer();
-                serializer.Serialize(file, phrases);
+                serializer.Serialize(file, serializePhrases);
             }
             return ReplyAsync($"{Context.User.Username} added **{phrase}** as their new phrase!");
         }
 
         [Command("remove")]
-        public Task RemovePhrase([Remainder] string phrase)
+        public Task RemovePhrase(int index = -1)
         {
             List<UserPhrases> phrases = new List<UserPhrases>();
+            string phrase = String.Empty;
+            BigDaddy bd = BigDaddies.GetBigDaddyByUser(Context.Guild.GetUser(Context.User.Id));
             using (StreamReader r = new StreamReader("C:\\Users\\kungl\\source\\repos\\Power66Radio\\phrases.json"))
             {
                 string json = r.ReadToEnd();
-                var allPhrases = JsonConvert.DeserializeObject<List<UserPhrases>>(json);
-                var userPhrases = allPhrases.Where(x => x.Id == Context.User.Id).FirstOrDefault();
-                if (userPhrases == null)
+                List<UserPhrases> allPhrases = JsonConvert.DeserializeObject<List<UserPhrases>>(json);
+                UserPhrases userPhrases = allPhrases.Where(x => x.Id == bd.Id).FirstOrDefault();
+                if (userPhrases.Phrases.Count==0)
                 {
                     return ReplyAsync("You don't even have any phrases idiot!");
                 }
                 else
                 {
-                    userPhrases.Phrases.Remove(phrase);
+                    if (index >= 0 && index < userPhrases.Phrases.Count)
+                    {
+                        phrase = userPhrases.Phrases[index];
+                        userPhrases.Phrases.RemoveAt(index);
+                        bd.Phrases.RemoveAt(index);
+                    } else
+                    {
+                        return ReplyAsync("**Oops!** You typed the wrong position");
+                    }
+                    
                 }
                 phrases = allPhrases;
             }
@@ -124,18 +134,19 @@ namespace Power66Radio
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Serialize(file, phrases);
             }
-            return ReplyAsync($"{Context.User.Username} removed **{phrase}** as their phrases!");
+            return ReplyAsync($"{Context.User.Username} removed **{phrase}** from their phrases!");
         }
 
         [Command("phrases")]
         public Task GetPhrases()
         {
-            BigDaddies bd = BigDaddies.GetInstance(Context.Guild.Users.ToList());
-            var user = bd.bigDaddies.Where(x => x.Id == Context.User.Id).FirstOrDefault();
-            string message = $"**{user.Nickname}**: \n ";
-            foreach(string phrase in user.Phrases)
+            BigDaddy user = BigDaddies.GetBigDaddyByUser(Context.Guild.GetUser(Context.User.Id));
+            string message = $"**{user.Nickname}**: \n";
+            if (user.Phrases == null) return ReplyAsync($"{Context.User.Username} does not have any phrases");
+            for(int i = 0; i < user.Phrases.Count; i++)
             {
-                message += phrase + "\n";
+                string phrase = user.Phrases[i];
+                message += $"[{i}] {phrase} \n";
             }
             return ReplyAsync(message);
         }
@@ -146,26 +157,7 @@ namespace Power66Radio
             string[] games = { "League Of Legends", "Valorant", "Genshin Impact", "Rocket League", "Project One Piece","Processing..."
                     ,"Attack On Titan","Scibble.io"};
             Random rand = new Random();
-
             return ReplyAsync($"Tuned for: **{games[rand.Next(0,games.Length)]}**");
-        }
-
-        public string DefaultNotify(Boolean ping)
-        {
-            Random rand = new Random();
-            SocketGuildChannel channel = Context.Guild.GetChannel(Context.Channel.Id);
-            SocketRole theRole = Context.Guild.Roles.Where(x => x.Name == "Big Daddies" || x.Id == DiscordIds.Amen).FirstOrDefault();
-            var emotes = Context.Guild.Emotes;
-
-            string user = "**" + (channel.GetUser(Context.User.Id).Nickname == null ? Context.User.Username : channel.GetUser(Context.User.Id).Nickname) + "**: ";
-            string message = user;
-
-            BigDaddies bd = BigDaddies.GetInstance(Context.Guild.Users.ToList());
-
-            BigDaddy dad = bd.bigDaddies.Where(x => x.Id == Context.User.Id).FirstOrDefault();
-            
-            message += dad.Phrases == null ? " *no phrases* " : dad.Phrases[rand.Next(0,dad.Phrases.Count)];
-            return ping ? theRole.Mention + "\n" + message : message;
         }
     }
 }
