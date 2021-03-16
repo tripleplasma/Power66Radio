@@ -21,13 +21,13 @@ namespace Power66Radio
         {
             Random rand = new Random();
             SocketGuild guild = Context.Guild;
-            SocketRole theRole = Context.Guild.Roles.Where(x => x.Name == "Big Daddies").FirstOrDefault();
+            SocketRole theRole = Context.Guild.Roles.Where(x => x.Id == BigDaddies.AdminRoleID).FirstOrDefault();
             var emotes = Context.Guild.Emotes;
 
             BigDaddy dad = BigDaddies.GetBigDaddyByUser(guild.GetUser(Context.User.Id));
             string message = "**" + dad.Nickname + "**: ";
 
-            if (dad == null) return ReplyAsync($"**{Context.User.Username}** is not a Big Daddy");
+            if (dad == null) return ReplyAsync($"**{Context.User.Username}** is not a {theRole.Name}");
             if (dad.Phrases.Count == 0) return ReplyAsync($"**{Context.User.Username}** does not have any phrases");
 
             message += dad.Phrases[rand.Next(0, dad.Phrases.Count)];

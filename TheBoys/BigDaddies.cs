@@ -12,11 +12,12 @@ namespace Power66Radio.TheBoys
 {
     public class BigDaddies
     {
+        public static ulong AdminRoleID = 356481452788940802;
         private static List<BigDaddy> bigDaddies = new List<BigDaddy>();
         public static BigDaddy GetBigDaddyByUser(SocketGuildUser user)
         {
             BigDaddy bd = bigDaddies.Where(x => x.Id == user.Id).FirstOrDefault();
-            if (user.Roles.Where(x => x.Name == "Big Daddies").FirstOrDefault() != null && bd == null)
+            if (user.Roles.Where(x => x.Id == AdminRoleID).FirstOrDefault() != null && bd == null)
             {
                 bd = new BigDaddy
                 {
